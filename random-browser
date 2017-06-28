@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# Create browser session that is random, in incognito mode, to avoid any issues
+# with cookies, etc
+
+function init {
+	# setup random directory for user data dir
+	RAND_DIR=$(cat /dev/urandom 2> /dev/null | tr -cd '[:alnum:]' 2> /dev/null | head -c 30)
+	TARGET_DIR="$HOME/.$RAND_DIR"
+	mkdir -v $TARGET_DIR
+
+	BROWSER="/usr/bin/chromium"
+	BROWSER_OPTIONS="--user-data-dir=$TARGET_DIR --incognito"
+
+	trap control_c SIGINT
+}
+
+function main {
+	$BROWSER $BROWSER_OPTIONS
+}
+
+function cleanup {
+	rm -rfv $TARGET_DIR
+}
+
+function control_c {
+	cleanup
+}
+
+init
+main
+cleanup
