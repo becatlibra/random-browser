@@ -3,14 +3,21 @@
 # Create browser session that is random, in incognito mode, to avoid any issues
 # with cookies, etc
 
+# Bookmarks will persist between sessions through copying of the file to and from
+# the temporary directory
 function init {
 	# setup random directory for user data dir
 	RAND_DIR=$(cat /dev/urandom 2> /dev/null | tr -cd '[:alnum:]' 2> /dev/null | head -c 30)
 	TARGET_DIR="$HOME/.$RAND_DIR"
-	mkdir -v $TARGET_DIR
+	mkdir -pv $TARGET_DIR/Default
 
 	BROWSER="/usr/bin/chromium"
 	BROWSER_OPTIONS="--user-data-dir=$TARGET_DIR --incognito"
+
+	BOOKMARKS_SRC="$HOME/.random_browser.bookmarks"
+	BOOKMARKS_TEMP="$TARGET_DIR/Default/Bookmarks"
+
+	syncBookmarks totemp
 
 	trap control_c SIGINT
 }
@@ -19,7 +26,23 @@ function main {
 	$BROWSER $BROWSER_OPTIONS
 }
 
+function syncBookmarks {
+	type=$1
+
+	if [[ $type == "totemp" ]]; then
+		if [[ -e $BOOKMARKS_SRC ]]; then
+			cp -fp $BOOKMARKS_SRC $BOOKMARKS_TEMP
+		fi
+	elif [[ $type == "fromtemp" ]]; then
+		if [[ -e $BOOKMARKS_TEMP ]]; then
+			cp -fp $BOOKMARKS_TEMP $BOOKMARKS_SRC
+		fi
+	fi
+}
+
+
 function cleanup {
+	syncBookmarks fromtemp
 	rm -rfv $TARGET_DIR
 }
 
